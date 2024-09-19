@@ -38,11 +38,11 @@ uint32_t binaryAdd(uint32_t a, uint32_t b) {
         return b;
     }
     while(b != 0) {
-        uint32_t carries = a ^ b;
+        uint32_t carries = a & b;
         a = a ^ b;
-    
+        b = (carries << 1);
     }
-    return 0; 
+    return a; 
 }
 
 uint32_t binarySubtract(uint32_t a, uint32_t b) {
