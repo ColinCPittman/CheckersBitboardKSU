@@ -31,9 +31,6 @@ int getBitValue(uint32_t data, int bitPosition) {
 }
 
 uint32_t binaryAdd(uint32_t a, uint32_t b) {
-    if(b==0) {
-        return a;
-    }
     if(a==0) {
         return b;
     }
@@ -46,21 +43,32 @@ uint32_t binaryAdd(uint32_t a, uint32_t b) {
 }
 
 uint32_t binarySubtract(uint32_t a, uint32_t b) {
-
-    return 0;
+    uint32_t complement = binaryAdd(~b,1);
+    return binaryAdd(a, complement);
 }
 
 uint32_t binaryMultiply(uint32_t a, uint32_t b) {
+    uint32_t result = 0;
+    while(b!=0) {
+        if(getBitValue(a,0) == 1) {
+            result += a;
+        }
+        a <<= 1;
+        b>>= 1;
+    }
 
-    return 0;
+    return result;
 }
 
 // Function to perform binary division
 uint32_t binaryDivide(uint32_t a, uint32_t b) {
-
-    return 0; // Placeholder return value
+uint32_t result = 0;
+    //for (int i = sizeof(a) * 8 - 1; i>=0; i--) ?
+        //uint32_t rollingDiff = 0; ?
+        // uint32_t aCopy ? Need to looking into this more, lacking clarity on the variables needed here, have to deepen my understanding and come back
+    
+    return 0; 
 }
-
 
 void toBinaryString(uint32_t data, char* buffer, size_t bufferSize) {
     // TODO: Implement conversion to binary string
