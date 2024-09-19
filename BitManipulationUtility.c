@@ -1,52 +1,67 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Function to set a specific bit in a data type
+/// @brief Sets a bit to 1 by using a bitwise OR with 1 shifted left by bitPosition.
+/// @param data unsigned int to be modified
+/// @param bitPosition position of the bit to set in the provided data
 void setBit(uint32_t* data, int bitPosition) {
-    // TODO: Implement bit-setting logic
+    *data |= (1 << bitPosition); 
 }
 
-// Function to clear a specific bit in a data type
+/// @brief Clears a bit (sets to 0) by using a bitwise AND with the negation of 1 shifted left by bitPosition.
+/// @param data unsigned int to be modified
+/// @param bitPosition position of the bit to clear in the provided data
 void clearBit(uint32_t* data, int bitPosition) {
-    // TODO: Implement bit-clearing logic
+    *data &= ~(1 << bitPosition); 
 }
 
-// Function to toggle a specific bit in a data type
+/// @brief Toggles the bit between 1 and 0 by using a bitwise XOR with 1 shifted left by bitPosition.
+/// @param data unsigned int to be modified
+/// @param bitPosition position of the bit to clear in the provided data
 void toggleBit(uint32_t* data, int bitPosition) {
-    // TODO: Implement bit-toggling logic
+    *data ^= (1 << bitPosition);
 }
 
-// Function to get the value of a specific bit in a data type
+/// @brief Returns the value of the bit at the specified bitPosition by shifting the target bit into the first position and taking the bitwise AND with the result.
+/// @param data to have a bit value assessed
+/// @param bitPosition position of the bit in data to asses, counting from 0 at the least significant bit.
+/// @return value of the bit in the bitPosition of the paramater data
 int getBitValue(uint32_t data, int bitPosition) {
-    // TODO: Implement bit-getting logic
-    return 0; // Placeholder return value
+        return (data >> bitPosition) & 1; 
 }
 
-// Function to perform binary addition
 uint32_t binaryAdd(uint32_t a, uint32_t b) {
-    // TODO: Implement binary addition logic
-    return 0; // Placeholder return value
+    if(b==0) {
+        return a;
+    }
+    if(a==0) {
+        return b;
+    }
+    while(b != 0) {
+        uint32_t carries = a ^ b;
+        a = a ^ b;
+    
+    }
+    return 0; 
 }
 
-// Function to perform binary subtraction
 uint32_t binarySubtract(uint32_t a, uint32_t b) {
-    // TODO: Implement binary subtraction logic
-    return 0; // Placeholder return value
+
+    return 0;
 }
 
-// Function to perform binary multiplication
 uint32_t binaryMultiply(uint32_t a, uint32_t b) {
-    // TODO: Implement binary multiplication logic
-    return 0; // Placeholder return value
+
+    return 0;
 }
 
 // Function to perform binary division
 uint32_t binaryDivide(uint32_t a, uint32_t b) {
-    // TODO: Implement binary division logic
+
     return 0; // Placeholder return value
 }
 
-// Function to convert an integer to its binary string representation
+
 void toBinaryString(uint32_t data, char* buffer, size_t bufferSize) {
     // TODO: Implement conversion to binary string
 }
