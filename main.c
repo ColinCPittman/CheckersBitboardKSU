@@ -7,7 +7,7 @@ int main() {
     uint32_t result = binaryAdd(a, b);
     
     printf("Result of binaryAdd(%u, %u) = %u\n", a, b, result);
-
+    printf("\nResult of div: %u" + binaryDivide(11,5));
 
     return 0;
 }
