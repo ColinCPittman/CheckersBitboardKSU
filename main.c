@@ -4,7 +4,7 @@
 
 #define POSITION(ROW, COL) (63 - (((ROW) - 1) * 8 + ((COL) - 1))) // Human-readable position
 
-//bitboards
+// bitboards
 uint32_t p1PeonBoard;
 uint32_t p1KingBoard;
 uint32_t p2PeonBoard;
@@ -18,6 +18,10 @@ bool isValidHop(int moveDistance, int player, bool isKing, uint32_t startPos);
 bool isValidMoveDistance(int moveDistance, int player, bool isKing);
 bool checkHop(uint32_t intermediatePos, int player);
 void resetGame();
+bool makeMove(uint32_t startPos, uint32_t endPos);
+bool promoteToKing(uint32_t pos);
+void displayBoard();
+
 int main()
 {
 
@@ -25,6 +29,7 @@ int main()
     p1KingBoard = 0;
     p2PeonBoard = 0b00000000000001000000111111111111;
     p2KingBoard = 0;
+    displayBoard();
     uint32_t a = 5;
     uint32_t b = 3;
     printf("Result of");
@@ -45,9 +50,107 @@ int main()
     return 0;
 }
 
+/// @brief Displays the current state of the board in an 8x8 ASCII grid.
+void displayBoard()
+{
+  printf("  ---------------------------------\n");
+    printf("    1 2 3 4 5 6 7 8\n"); 
+    int bitIndex = 0; 
 
+    for(int row = 1; row <= 8; row++) {
+        printf("%d | ", row); // print row number
+        for(int col = 1; col <= 8; col++) {
+            if( (row + col) % 2 == 1 ) { //if it is odd then it's playable
+
+                int currentBitIndex = bitIndex;
+                int bitPos = 31 - currentBitIndex; //printing in reverse order since we are starting our printing from the top right
+
+                // check all four bitboards for a piece at this position
+                int piecesFound = 0;
+                char piece = '.';
+                if(getBitValue(p1PeonBoard, bitPos)) { piecesFound++; piece = 'a'; }
+                if(getBitValue(p1KingBoard, bitPos)) { piecesFound++; piece = 'A'; }
+                if(getBitValue(p2PeonBoard, bitPos)) { piecesFound++; piece = 'b'; }
+                if(getBitValue(p2KingBoard, bitPos)) { piecesFound++; piece = 'B'; }
+
+                
+                if(piecesFound > 1) {
+                    piece = 'E'; //E for error
+                }
+
+                printf("%c ", piece);
+                bitIndex++; 
+            }
+            else { //it is a white tile we can skip checking and print dot.
+                
+                printf(". ");
+            }
+        }
+        printf("|\n"); 
+    }
+    printf("  -------------------\n");
+     printf("    1 2 3 4 5 6 7 8\n");
+}
+
+/// @brief Executes a move from startPos to endPos if it's valid.
+///        Updates the board state accordingly.
+/// @param startPos Starting position index (0-63).
+/// @param endPos Ending position index (0-63).
+/// @return true if the move was successfully made; false otherwise.
+bool makeMove(uint32_t startPos, uint32_t endPos){
+    if(!validateMove(startPos,endPos)){
+        return false;
+    }
+}
+
+/// @brief Promotes a peon to a king if it reaches the opposite end.
+/// @param pos Position index (0-63) of the peon to be promoted.
+/// @return true if promotion was successful; false otherwise.
+bool promoteToKing(uint32_t pos){
+    // check board boundaries
+    if (pos > 63) return false;
+    
+
+    // check if both positions are on black tiles
+    uint32_t row = (63 - pos) / 8 + 1;
+    uint32_t col = (63 - pos) % 8 + 1;
+
+
+    if ((row + col) % 2 == 0) return false; //if on white tile
+
+
+
+    // re-interpret positions for 32 tiles
+    uint32_t trueStartPos = (pos / 8) * 4 + (pos % 8) / 2;
+
+    // determine player and piece type
+    int player = 0;
+    bool isKing;
+    if (!determinePieceAndPlayer(trueStartPos, &player, &isKing)) return false;
+
+    if(player != 0 && !isKing) {
+        switch (player) {
+            case 1:
+            if (row == 8) {
+                clearBit(p1PeonBoard, trueStartPos);
+                setBit(p1KingBoard, trueStartPos);
+            }
+            break;
+            case 2: 
+            if (row == 1) {
+                clearBit(p2PeonBoard, trueStartPos);
+                setBit(p2KingBoard, trueStartPos);
+            }
+            break;
+            default:
+            return false;
+        }
+    
+    }
+}
 /// @brief Resets the board state for both players.
-void resetGame() {
+void resetGame()
+{
     p1PeonBoard = 0b11111111111100000000000000000000;
     p1KingBoard = 0;
     p2PeonBoard = 0b00000000000000000000111111111111;
@@ -60,18 +163,16 @@ void resetGame() {
 /// @return true if the move is valid; false otherwise.
 bool validateMove(uint32_t startPos, uint32_t endPos)
 {
-    // Check board boundaries
-    if (startPos > 63 || endPos > 63)
-        return false;
+    // check board boundaries
+    if (startPos > 63 || endPos > 63) return false;
 
-    // Check if both positions are on black tiles
+    // check if both positions are on black tiles
     uint32_t startRow = (63 - startPos) / 8 + 1;
     uint32_t startCol = (63 - startPos) % 8 + 1;
     uint32_t endRow = (63 - endPos) / 8 + 1;
     uint32_t endCol = (63 - endPos) % 8 + 1;
 
-    if ((startRow + startCol) % 2 == 0 || (endRow + endCol) % 2 == 0)
-        return false;
+    if ((startRow + startCol) % 2 == 0 || (endRow + endCol) % 2 == 0) return false;
 
     // re-interpret positions for 32 tiles
     uint32_t trueStartPos = (startPos / 8) * 4 + (startPos % 8) / 2;
@@ -79,21 +180,18 @@ bool validateMove(uint32_t startPos, uint32_t endPos)
 
     int moveDistance = trueStartPos - trueEndPos;
 
-    // Determine player and piece type
+    // determine player and piece type
     int player;
     bool isKing;
-    if (!determinePieceAndPlayer(trueStartPos, &player, &isKing))
-        return false;
+    if (!determinePieceAndPlayer(trueStartPos, &player, &isKing)) return false;
 
-    // Check if the end position is occupied
-    if (isOccupied(trueEndPos))
-        return false;
+    // check if the end position is occupied
+    if (isOccupied(trueEndPos)) return false;
 
-    // Validate move distance
-    if (!isValidMoveDistance(moveDistance, player, isKing))
-        return false;
+    // validate move distance
+    if (!isValidMoveDistance(moveDistance, player, isKing)) return false;
 
-    // Check for hops if necessary
+    // check for hops if necessary
     bool isHop = false;
     if (player == 1 && isKing && (moveDistance == 9 || moveDistance == -7))
         isHop = true;
@@ -113,7 +211,6 @@ bool validateMove(uint32_t startPos, uint32_t endPos)
     return true;
 }
 
-
 /// @brief Checks if a position is occupied by any piece. Helper method for validateMove method.
 /// @param pos position index (0-31).
 /// @return true if occupied; false otherwise.
@@ -125,11 +222,11 @@ bool isOccupied(uint32_t pos)
            getBitValue(p2KingBoard, pos);
 }
 
-/// @brief Determines the player and piece type at a given position. 
+/// @brief Determines the player and piece type at a given position.
 /// @param pos position index (0-31).
 /// @param player pointer to store the player number (1 or 2).
 /// @param isKing pointer to store if the piece is a king.
-/// @return true if exactly one piece is found; false otherwise.
+/// @return true if exactly one piece is found; false otherwise. If player and is unchanged, then no pieces were found.
 bool determinePieceAndPlayer(uint32_t pos, int *player, bool *isKing)
 {
     int piecesFound = 0;
@@ -180,7 +277,7 @@ bool isValidHop(int moveDistance, int player, bool isKing, uint32_t startPos)
     return checkHop(intermediatePos, player);
 }
 
-/// @brief Checks if the intermediate position during a hop contains exactly one enemy piece and no friendly pieces. 
+/// @brief Checks if the intermediate position during a hop contains exactly one enemy piece and no friendly pieces.
 /// Helper method for validateMove method.
 /// @param intermediatePos the intermediate position index.
 /// @param player the player making the move.
@@ -199,7 +296,7 @@ bool checkHop(uint32_t intermediatePos, int player)
     }
 }
 
-/// @brief Validates if the move distance is allowed for the player's piece.Helper method for validateMove method.
+/// @brief Validates if the move distance is allowed for the player's piece. Helper method for validateMove method.
 /// @param moveDistance the calculated move distance.
 /// @param player the player making the move.
 /// @param isKing Whether the moving piece is a king.

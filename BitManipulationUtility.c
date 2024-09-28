@@ -53,7 +53,8 @@ int getBitValue(uint32_t data, int bitPosition)
 }
 
 /// @brief Performs the binary addition of 'a' and 'b' iteratively by first identifying where the carry out would occur in the addition, and then adding without carrying out (via the bitwise XOR).
-/// The carries are then shifted left and added to the result in the subsequent iteration. Repeats until all carries have been propagated and readded into the sum.
+///        The carries are then shifted left and added to the result in the subsequent iteration. 
+///        Repeats until all carries have been propagated and readded into the sum.
 /// @param a the first addend
 /// @param b the second addend
 /// @return the result of adding 'a' and 'b'.
@@ -103,7 +104,7 @@ uint32_t binaryMultiply(uint32_t a, uint32_t b)
 
 
 /// @brief Performs the binary division of 'a' divided by 'b'. Builds the quotient by iterating over the dividend's bits, checking if the divisor can be subtracted from the portion of digits of the dividend.
-/// If the subtraction is possible, a 1 is added to the quotient at the corresponding bit position, otherwise zero.
+///        If the subtraction is possible, a 1 is added to the quotient at the corresponding bit position, otherwise zero.
 /// @param a dividend 
 /// @param b divisor
 /// @return the quotient of a divided by b as an unsigned integer. Note: Returns 0 if b is 0 even though it is undefined.
@@ -217,8 +218,8 @@ uint32_t fromDecimalString(const char *decimalString){
 }
 
 /// @brief Helper method for bitboard that reverses the order of bits in a 32 bit unsigned int. 
-/// This simplifies the piece move validatioin logic because both player's boards can be initialized with the pieces at the same side 
-/// and moves can be interpreted as the same direction for both players.
+///        This simplifies the piece move validatioin logic because both player's boards can be initialized with the pieces at the same side 
+///        and moves can be interpreted as the same direction for both players.
 uint32_t reverseBits(uint32_t originalBoard) {
     uint32_t reversed = 0;
     for(int i = 0; i < 32; i++) {
