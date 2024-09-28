@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>  // Added for strlen
+#include <math.h>    // Added for pow
+
+// Forward declaration for binaryToHexChar
+char binaryToHexChar(uint8_t fourBitGroup);
 
 /// @brief Sets a bit to 1 by using a bitwise OR with 1 shifted left by bitPosition.
 /// @param data unsigned int to be modified
@@ -44,8 +49,9 @@ int getBitValue(uint32_t data, int bitPosition)
     {
         return -1;
     }
-        return (data >> bitPosition) & 1;
+    return (data >> bitPosition) & 1;
 }
+
 /// @brief Performs the binary addition of 'a' and 'b' iteratively by first identifying where the carry out would occur in the addition, and then adding without carrying out (via the bitwise XOR).
 /// The carries are then shifted left and added to the result in the subsequent iteration. Repeats until all carries have been propagated and readded into the sum.
 /// @param a the first addend
@@ -68,13 +74,13 @@ uint32_t binaryAdd(uint32_t a, uint32_t b)
 /// @return the result of subtracting 'b' from 'a'. Note: If 'b' is greater than 'a' (the result would be negative) then 0 is returned.
 uint32_t binarySubtract(uint32_t a, uint32_t b)
 {
-    if (!(b > a))
+    if (b > a)  // Fixed the condition
     {
         return 0;
     }
-        return binaryAdd(a, binaryAdd(~b, 1));
-    
+    return binaryAdd(a, binaryAdd(~b, 1));
 }
+
 /// @brief Performs binary multiplication of 'a' and 'b' by checking each bit of the multiplier, and for each '1', it adds the multiplicand and shifts left once. Otherwise shift left only.
 /// @param a multiplicand
 /// @param b multiplier
@@ -164,7 +170,7 @@ void binaryToHexString(uint32_t data, char *buffer, size_t bufferSize)
 
     // Iterate over every 4 bits and pass it to helper method binaryToHex to get its char value in hexadecimal, then adds it to the buffer.
     for (int i = 28; i >= 0; i-=4) {
-        uint8_t groupOfFour = (data >> i) & 00001111;
+        uint8_t groupOfFour = (data >> i) & 0x0F;  // Changed 00001111 to 0x0F for clarity
         buffer[(28 - i)/4] = binaryToHexChar(groupOfFour);
     }
 
@@ -175,12 +181,12 @@ void binaryToHexString(uint32_t data, char *buffer, size_t bufferSize)
 /// @param fourBitGroup 8 bit int out of necessity, only first 4 bits should contain a value to be assessed.
 /// @return the char value of fourBitGroup in hexadecimal
 char binaryToHexChar(uint8_t fourBitGroup) {
-    if(fourBitGroup < 10) {
-        return binaryAdd(fourBitGroup, 48);
-    } else if(fourBitGroup < 16) {
-        return binaryAdd(binarySubtract(fourBitGroup,10), 65);
+    if (fourBitGroup < 10) {
+        return (char)binaryAdd(fourBitGroup, 48);  // '0' starts at ASCII 48
+    } else if (fourBitGroup < 16) {
+        return (char)binaryAdd(binarySubtract(fourBitGroup, 10), 65);  // 'A' starts at ASCII 65
     }
-    return '?';
+    return '?';  // Error case
 }
 
 /// @brief Converts a decimal string to an integer by summing the values of each char's coefficient (multiplied by 10) to the digits respective power(*2^i).
@@ -210,6 +216,19 @@ uint32_t fromDecimalString(const char *decimalString){
     return result;
 }
 
+/// @brief Helper method for bitboard that reverses the order of bits in a 32 bit unsigned int. 
+/// This simplifies the piece move validatioin logic because both player's boards can be initialized with the pieces at the same side 
+/// and moves can be interpreted as the same direction for both players.
+uint32_t reverseBits(uint32_t originalBoard) {
+    uint32_t reversed = 0;
+    for(int i = 0; i < 32; i++) {
+        reversed <<= 1;
+        reversed |= (originalBoard & 1);
+        originalBoard >>= 1;
+    }
+    return reversed;
+}
+
 /// @brief Converts a binary string to a uint32_t integer.
 /// @param binaryStr input binary string.
 /// @return converted uint32_t integer. Returns 0 on invalid input.
@@ -217,10 +236,10 @@ uint32_t binaryToDecimal(const char *binaryStr){
     uint32_t result = 0;
     int length = strlen(binaryStr);
     for(int i=0; i<length;i++){
-        if(getBitValue(binaryStr, length-i) == '1'){
-            setBit(result,i);
-        } else if(getBitValue(binaryStr, length-i) == '0') {
-            //doing nothing here keeps the bit set to zero
+        if(binaryStr[i] == '1'){
+            setBit(&result, i);  // Passed the address of result
+        } else if(binaryStr[i] == '0') {
+            // doing nothing here keeps the bit set to zero
         } else {
             return 0; //string should only contain 1s or 0s, so abort if it is not one of those two
         }
@@ -234,11 +253,12 @@ uint32_t binaryToDecimal(const char *binaryStr){
 uint32_t hexToDecimal(const char *hexStr){
     uint32_t result = 0;
     int i=0;
+    int len = strlen(hexStr);  // Store the length to avoid multiple calls
     while(hexStr[i] != '\0'){
         if(hexStr[i] >= 'A' && hexStr[i] <= 'F') {
-            result = result + (hexStr[i] - 55) * pow(16, (strlen(hexStr) - 1) - i); //determine the base-10 value of the letter and multiply it by 16 raised to the power of the corresponding digit position.
+            result = binaryAdd(result, binaryMultiply((hexStr[i] - 55), pow(16, (len - 1) - i)));
         } else if(hexStr[i] >= '0' && hexStr[i] <= '9') {
-            result = result + (hexStr[i] - '0') * pow(16, (strlen(hexStr) - 1) - i); //determine the decimal value of the digit from ascii, then multiply it by 16 raised to the power of the corresponding digit position.
+            result = binaryAdd(result, binaryMultiply((hexStr[i] - '0'), pow(16, (len - 1) - i)));
         } else {
             return 0; // string does not contain 0-9 or A-F indicates invalid hexStr
         }
