@@ -101,6 +101,16 @@ bool makeMove(uint32_t startPos, uint32_t endPos){
     if(!validateMove(startPos,endPos)){
         return false;
     }
+    uint32_t row = (63 - startPos) / 8 + 1;
+    uint32_t trueStartPos = (startPos / 8) * 4 + (startPos % 8) / 2;
+    uint32_t trueEndPos = (endPos / 8) * 4 + (endPos % 8) / 2;
+
+    int moveDistance = trueStartPos - trueEndPos;
+    // determine player and piece type
+    int player = 0;
+    bool isKing;
+    if (!determinePieceAndPlayer(trueStartPos, &player, &isKing)) return false;
+
 }
 
 /// @brief Promotes a peon to a king if it reaches the opposite end.
@@ -274,16 +284,6 @@ bool isValidHop(int moveDistance, int player, bool isKing, uint32_t startPos)
     {
         intermediatePos = isKing ? startPos + 4 : startPos + 5;
     }
-    return checkHop(intermediatePos, player);
-}
-
-/// @brief Checks if the intermediate position during a hop contains exactly one enemy piece and no friendly pieces.
-/// Helper method for validateMove method.
-/// @param intermediatePos the intermediate position index.
-/// @param player the player making the move.
-/// @return true if the hop crosses over an enemy piece; false otherwise.
-bool checkHop(uint32_t intermediatePos, int player)
-{
     if (player == 1)
     {
         return (getBitValue(p2KingBoard, intermediatePos) || getBitValue(p2PeonBoard, intermediatePos)) &&
@@ -295,6 +295,7 @@ bool checkHop(uint32_t intermediatePos, int player)
                !(getBitValue(p2KingBoard, intermediatePos) || getBitValue(p2PeonBoard, intermediatePos));
     }
 }
+
 
 /// @brief Validates if the move distance is allowed for the player's piece. Helper method for validateMove method.
 /// @param moveDistance the calculated move distance.
