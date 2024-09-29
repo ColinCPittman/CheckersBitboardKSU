@@ -14,10 +14,10 @@ bool validateMove(uint32_t startPos, uint32_t endPos);
 bool arrayContains(int array[], int size, int value);
 bool isOccupied(uint32_t pos);
 bool determinePieceAndPlayer(uint32_t pos, int *player, bool *isKing);
-int validateHop(int moveDistance, int player, bool isKing, uint32_t startPos);
-bool isValidMoveDistance(int moveDistance, int player, bool isKing);
+int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, int startCol);
+bool isValidMoveDistance(int moveDistance, int player, bool isKing, int startCol);
 bool checkHop(uint32_t intermediatePos, int player);
-bool isHop(int player, bool *isKing, int *moveDistance);
+bool isHop(int player, bool isKing, int moveDistance);
 void resetGame();
 bool makeMove(uint32_t startPos, uint32_t endPos);
 bool promoteToKing(uint32_t pos);
@@ -130,7 +130,7 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
     }
 
     int startCol;
-    updateCol(startCol, startPos); // used in determining valid hop
+    updateCol(&startCol, startPos); // used in determining valid hop
     int endRow;
     updateRow(&endRow, endPos); // get row number to determine if a promotion will be needed
 
@@ -152,17 +152,17 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
             {
                 // having verified there is only 1 enemy piece in hoppedTileIndex already with validateHop
                 // we can safely clear both boards of the opponent without determined which board the hopped piece was on
-                clearBit(p2PeonBoard, hoppedTileIndex);
-                clearBit(p2KingBoard, hoppedTileIndex);
+                clearBit(&p2PeonBoard, hoppedTileIndex);
+                clearBit(&p2KingBoard, hoppedTileIndex);
                 if (isKing)
                 {
-                    clearBit(p1KingBoard, startPos); // clear player 1's king piece's original position
-                    setBit(p1KingBoard, endPos);     // set player 1's king piece's new position
+                    clearBit(&p1KingBoard, startPos); // clear player 1's king piece's original position
+                    setBit(&p1KingBoard, endPos);     // set player 1's king piece's new position
                 }
                 else
                 {
-                    clearBit(p1PeonBoard, startPos); // clear player 1's non-king piece's original position
-                    setBit(p1PeonBoard, endPos);     // set player 1's non-king piece's new position
+                    clearBit(&p1PeonBoard, startPos); // clear player 1's non-king piece's original position
+                    setBit(&p1PeonBoard, endPos);     // set player 1's non-king piece's new position
                 }
             }
             else
@@ -174,13 +174,13 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
         {
             if (isKing)
             {
-                clearBit(p1KingBoard, startPos); // clear player 1's king piece's original position
-                setBit(p1KingBoard, endPos);     // set player 1's king piece's new position
+                clearBit(&p1KingBoard, startPos); // clear player 1's king piece's original position
+                setBit(&p1KingBoard, endPos);     // set player 1's king piece's new position
             }
             else
             {
-                clearBit(p1PeonBoard, startPos); // clear player 1's non-king piece's original position
-                setBit(p1PeonBoard, endPos);     // set player 1's non-king piece's new position
+                clearBit(&p1PeonBoard, startPos); // clear player 1's non-king piece's original position
+                setBit(&p1PeonBoard, endPos);     // set player 1's non-king piece's new position
             }
         }
     }
@@ -193,17 +193,17 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
             {
                 // having verified there is only 1 enemy piece in hoppedTileIndex already with validateHop
                 // we can safely clear both boards of the opponent without determined which board the hopped piece was on
-                clearBit(p1PeonBoard, hoppedTileIndex);
-                clearBit(p1KingBoard, hoppedTileIndex);
+                clearBit(&p1PeonBoard, hoppedTileIndex);
+                clearBit(&p1KingBoard, hoppedTileIndex);
                 if (isKing)
                 {
-                    clearBit(p2KingBoard, startPos); // clear player 2's king piece's original position
-                    setBit(p2KingBoard, endPos);     // set player 2's king piece's new position
+                    clearBit(&p2KingBoard, startPos); // clear player 2's king piece's original position
+                    setBit(&p2KingBoard, endPos);     // set player 2's king piece's new position
                 }
                 else
                 {
-                    clearBit(p2PeonBoard, startPos); // clear player 2's non-king piece's original position
-                    setBit(p2PeonBoard, endPos);     // set player 2's non-king piece's new position
+                    clearBit(&p2PeonBoard, startPos); // clear player 2's non-king piece's original position
+                    setBit(&p2PeonBoard, endPos);     // set player 2's non-king piece's new position
                 }
             }
             else
@@ -215,13 +215,13 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
         {
             if (isKing)
             {
-                clearBit(p2KingBoard, startPos); // clear player 2's king piece's original position
-                setBit(p2KingBoard, endPos);     // set player 2's king piece's new position
+                clearBit(&p2KingBoard, startPos); // clear player 2's king piece's original position
+                setBit(&p2KingBoard, endPos);     // set player 2's king piece's new position
             }
             else
             {
-                clearBit(p2PeonBoard, startPos); // clear player 2's non-king piece's original position
-                setBit(p2PeonBoard, endPos);     // set player 2's non-king piece's new position
+                clearBit(&p2PeonBoard, startPos); // clear player 2's non-king piece's original position
+                setBit(&p2PeonBoard, endPos);     // set player 2's non-king piece's new position
             }
         }
     }
@@ -265,15 +265,15 @@ bool promoteToKing(uint32_t pos)
         case 1:
             if (row == 8)
             {
-                clearBit(p1PeonBoard, pos);
-                setBit(p1KingBoard, pos);
+                clearBit(&p1PeonBoard, pos);
+                setBit(&p1KingBoard, pos);
             }
             break;
         case 2:
             if (row == 1)
             {
-                clearBit(p2PeonBoard, pos);
-                setBit(p2KingBoard, pos);
+                clearBit(&p2PeonBoard, pos);
+                setBit(&p2KingBoard, pos);
             }
             break;
         default:
@@ -315,10 +315,9 @@ bool validateMove(uint32_t startPos, uint32_t endPos)
     convertPositionsTo32TileFormat(&startPos, &endPos);
 
     int moveDistance = startPos - endPos;
-    []
 
-        // determine player and piece type
-        int player;
+    // determine player and piece type
+    int player;
     bool isKing;
     if (!determinePieceAndPlayer(startPos, &player, &isKing))
         return false;
