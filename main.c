@@ -17,6 +17,7 @@ bool determinePieceAndPlayer(uint32_t pos, int *player, bool *isKing);
 bool isValidHop(int moveDistance, int player, bool isKing, uint32_t startPos);
 bool isValidMoveDistance(int moveDistance, int player, bool isKing);
 bool checkHop(uint32_t intermediatePos, int player);
+bool isHop(int player, bool* isKing, int* moveDistance);
 void resetGame();
 bool makeMove(uint32_t startPos, uint32_t endPos);
 bool promoteToKing(uint32_t pos);
@@ -201,18 +202,8 @@ bool validateMove(uint32_t startPos, uint32_t endPos)
     // validate move distance
     if (!isValidMoveDistance(moveDistance, player, isKing)) return false;
 
-    // check for hops if necessary
-    bool isHop = false;
-    if (player == 1 && isKing && (moveDistance == 9 || moveDistance == -7))
-        isHop = true;
-    else if (player == 1 && !isKing && (moveDistance == 9))
-        isHop = true;
-    else if (player == 2 && isKing && (moveDistance == -7 || moveDistance == 9))
-        isHop = true;
-    else if (player == 2 && !isKing && (moveDistance == -7 || moveDistance == -9))
-        isHop = true;
-
-    if (isHop)
+    // check if the move is a hop and if so if it is valid
+    if (isHop(player, isKing, moveDistance))
     {
         return isValidHop(moveDistance, player, isKing, trueStartPos);
     }
@@ -221,6 +212,24 @@ bool validateMove(uint32_t startPos, uint32_t endPos)
     return true;
 }
 
+/// @brief Checks if the move is a hop given the player, piece, and (0-32) move distance.
+/// @param player player of the piece being checked
+/// @param isKing type of piece being checked
+/// @param moveDistance distanced of move being checked
+/// @return true the distance matches a valid hop distance for the player and piece type.
+bool isHop(int player, bool isKing, int moveDistance)
+{
+    if (player == 1 && isKing && (moveDistance == 9 || moveDistance == -7))
+        return true;
+    else if (player == 1 && !(isKing) && (moveDistance == 9))
+        return true;
+    else if (player == 2 && isKing && (moveDistance == -7 || moveDistance == 9))
+        return true;
+    else if (player == 2 && !(isKing) && (moveDistance == -7 || moveDistance == -9))
+        return true;
+    else
+        return false;
+}
 /// @brief Checks if a position is occupied by any piece. Helper method for validateMove method.
 /// @param pos position index (0-31).
 /// @return true if occupied; false otherwise.
