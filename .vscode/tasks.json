@@ -4,12 +4,18 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "C:\\Users\\colin\\Documents\\mingw64\\bin\\gcc.exe",  // Updated path
+            "command": "C:/msys64/mingw64/bin/gcc.exe",
             "args": [
                 "-g",
                 "${file}",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "-I",
+                "C:/msys64/mingw64/include",
+                "-I",
+                "C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/12.2.0/include",
+                "-I",
+                "C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/12.2.0/include-fixed"
             ],
             "group": "build",
             "problemMatcher": [
@@ -20,7 +26,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: gcc.exe build active file",
-            "command": "C:\\Users\\colin\\Documents\\mingw64\\bin\\gcc.exe",  // Updated path
+            "command": "C:/msys64/mingw64/bin/gcc.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
@@ -29,7 +35,7 @@
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "C:/msys64/mingw64/bin"
             },
             "problemMatcher": [
                 "$gcc"
