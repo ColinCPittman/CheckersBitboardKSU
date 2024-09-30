@@ -189,7 +189,7 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
         if (isHop(player, isKing, moveDistance))
         {
             int hoppedTileIndex = validateHop(player, isKing, moveDistance, startPos, startCol);
-             if (hoppedTileIndex)
+            if (hoppedTileIndex)
             {
                 // having verified there is only 1 enemy piece in hoppedTileIndex already with validateHop
                 // we can safely clear both boards of the opponent without determined which board the hopped piece was on
@@ -226,7 +226,8 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
         }
     }
 
-    if ((endRow == 8 && player == 1 && !isKing) || (endRow == 1 && player == 2 && !isKing)) promoteToKing(endPos);
+    if ((endRow == 8 && player == 1 && !isKing) || (endRow == 1 && player == 2 && !isKing))
+        promoteToKing(endPos);
 
     return true;
 }
@@ -427,20 +428,17 @@ bool determinePieceAndPlayer(uint32_t pos, int *player, bool *isKing)
 /// @param isKing whether the moving piece is a king.
 /// @param startPos the starting position index (0-32).
 /// @param startCol the column of the starting piece
-/// @return index of piece being hopped over if the hop is valid; false if the move or board states are not valid.
+/// @return index of piece being hopped over if the hop is valid; false if the move, startCol, or board states are not valid.
 int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, int startCol)
 {
-    // Initialize variables for hop validation
     uint32_t intermediatePos;
-    // Determine the expected hop distance based on column and piece type
+
     if (!isKing)
     {
-        // Handle Pawns based on column
-        switch (startCol)
+        switch (startCol) // for columns 1 through 8
         {
         case 1:
-            // Column 1: Only certain hop distances are allowed
-            if (player == 1)
+            if (player == 1) // Column 1, player 1 peon.
             {
                 if (moveDistance == 9)
                 {
@@ -451,9 +449,9 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
                     return false;
                 }
             }
-            else // player 2
+            else // Column 1, player 2 peon.
             {
-                if (moveDistance == -9)
+                if (moveDistance == -7)
                 {
                     intermediatePos = startPos - 4;
                 }
@@ -465,8 +463,32 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             break;
 
         case 2:
-            // Column 2: Different hop distances
-            if (player == 1)
+
+            if (player == 1) // Column 2, player 1 peon.
+            {
+                if (moveDistance == 9)
+                {
+                    intermediatePos = startPos + 5;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else // Column 2, player 2 peon.
+            {
+                if (moveDistance == -7)
+                {
+                    intermediatePos = startPos - 3;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            break;
+        case 3:
+            if (player == 1) // Column 3, player 1 peon.
             {
                 if (moveDistance == 7 || moveDistance == 9)
                 {
@@ -477,7 +499,84 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
                     return false;
                 }
             }
-            else // player 2
+            else // Column 3, player 2 peon.
+            {
+                if (moveDistance == -7 || moveDistance == -9)
+                {
+                    intermediatePos = (moveDistance == -7) ? (startPos - 4) : (startPos - 5);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            break;
+
+        case 4:
+            if (player == 1) // Column 4, player 1 peon.
+            {
+                if (moveDistance == 7 || moveDistance == 9)
+                {
+                    intermediatePos = (moveDistance == 7) ? (startPos + 4) : (startPos + 5);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else // Column 4, player 2 peon.
+            {
+                if (moveDistance == -7 || moveDistance == -9)
+                {
+                    intermediatePos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            break;
+
+        case 5:
+
+            if (player == 1) // Column 5, player 1 peon.
+            {
+                if (moveDistance == 7 || moveDistance == 9)
+                {
+                    intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else // Column 5, player 2 peon.
+            {
+                if (moveDistance == -7 || moveDistance == -9)
+                {
+                    intermediatePos = (moveDistance == -7) ? (startPos - 4) : (startPos - 5);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            break;
+
+        case 6:
+
+            if (player == 1) // Column 6, player 1 peon.
+            {
+                if (moveDistance == 7 || moveDistance == 9)
+                {
+                    intermediatePos = (moveDistance == 7) ? (startPos + 4) : (startPos + 5);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else // Column 6, player 2 peon.
             {
                 if (moveDistance == -7 || moveDistance == -9)
                 {
@@ -491,23 +590,23 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             break;
 
         case 7:
-            // Column 7: Different hop distances
-            if (player == 1)
+
+            if (player == 1) // Column 7, player 1 peon.
             {
-                if (moveDistance == 7 || moveDistance == 9)
+                if (moveDistance == 7)
                 {
-                    intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4);
+                    intermediatePos = (startPos + 3);
                 }
                 else
                 {
                     return false;
                 }
             }
-            else // player 2
+            else // Column 7, player 2 peon.
             {
-                if (moveDistance == -7 || moveDistance == -9)
+                if (moveDistance == -9)
                 {
-                    intermediatePos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4);
+                    intermediatePos = startPos - 5;
                 }
                 else
                 {
@@ -517,8 +616,8 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             break;
 
         case 8:
-            // Column 8: Only certain hop distances are allowed
-            if (player == 1)
+
+            if (player == 1) // Column 8, player 1 peon.
             {
                 if (moveDistance == 7)
                 {
@@ -529,9 +628,9 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
                     return false;
                 }
             }
-            else // player 2
+            else // Column 8, player 2 peon.
             {
-                if (moveDistance == -7)
+                if (moveDistance == -9)
                 {
                     intermediatePos = startPos - 4;
                 }
@@ -542,195 +641,102 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             }
             break;
 
-        default:
-            // Columns 3-6: General hop distances
-            if (player == 1)
-            {
-                if (moveDistance == 7 || moveDistance == 9)
-                {
-                    intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else // player 2
-            {
-                if (moveDistance == -7 || moveDistance == -9)
-                {
-                    intermediatePos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            break;
+        default: // column number is invalid.
+            return false;
         }
     }
-    else
+    else //it is a king piece, player does not need to be consdiered for these as both directions are valid for both players.
     {
-        // Handle Kings based on column
         switch (startCol)
         {
-        case 1:
-            // Column 1: Kings can only hop in specific directions
-            if (player == 1)
-            {
-                if (moveDistance == 9)
+        case 1: //Column 1
+
+                if (moveDistance == 9 || moveDistance == -7)
                 {
-                    intermediatePos = startPos + 4;
-                }
-                else if (moveDistance == -7)
-                {
-                    intermediatePos = startPos - 4;
+                    intermediatePos = (moveDistance > 0) ? (startPos + 4) : (startPos - 4) ;
                 }
                 else
                 {
                     return false;
                 }
-            }
-            else // player 2
-            {
-                if (moveDistance == -9)
-                {
-                    intermediatePos = startPos - 4;
-                }
-                else if (moveDistance == 7)
-                {
-                    intermediatePos = startPos + 4;
-                }
-                else
-                {
-                    return false;
-                }
-            }
+            
+ 
             break;
 
-        case 2:
-            // Column 2: Kings can hop 7 or 9
-            if (player == 1)
-            {
-                if (moveDistance == -7 || moveDistance == 9)
+        case 2: //Column 2
+                if (moveDistance == 9 || moveDistance == -7)
                 {
-                    intermediatePos = (moveDistance == -7) ? (startPos - 3) : (startPos + 5);
+                    intermediatePos = (moveDistance > 0) ? (startPos + 5) : (startPos - 3) ;
                 }
                 else
                 {
                     return false;
                 }
-            }
-            else // player 2
-            {
-                if (moveDistance == 7 || moveDistance == -9)
-                {
-                    intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos - 5);
-                }
-                else
-                {
-                    return false;
-                }
-            }
+            
             break;
-
-        case 7:
-            // Column 7: Kings can hop 7 or -9
-            if (player == 1)
-            {
-                if (moveDistance == 7 || moveDistance == -9)
+        case 5: //Column 5 same logic as case 3.
+        case 3: //Column 3
+                if (moveDistance == -9 || moveDistance == -7 || moveDistance == 7 || moveDistance == 9)
                 {
-                    intermediatePos = (moveDistance == 7) ? (startPos + 4) : (startPos - 4);
+                    if(moveDistance > 0) {
+                        intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4) ;
+                    } else {
+                      intermediatePos = (moveDistance == -7) ? (startPos - 4) : (startPos - 5) ;  
+                    }
+                    
                 }
                 else
                 {
                     return false;
                 }
-            }
-            else // player 2
-            {
-                if (moveDistance == -7 || moveDistance == 9)
-                {
-                    intermediatePos = (moveDistance == -7) ? (startPos - 4) : (startPos + 4);
-                }
-                else
-                {
-                    return false;
-                }
-            }
+            
             break;
+        case 6: //Column 6, same logic as case 4.
+         case 4: //Column 4
+                if (moveDistance == -9 || moveDistance == -7 || moveDistance == 7 || moveDistance == 9)
+                {
+                    if(moveDistance > 0) {
+                        intermediatePos = (moveDistance == 7) ? (startPos + 4) : (startPos + 5) ;
+                    } else {
+                      intermediatePos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4) ;  
+                    }
+                    
+                }
+                else
+                {
+                    return false;
+                }
+            
+            break;
+        case 7: //Column 7
+            if (moveDistance == -9 || moveDistance == 7)
+                {
+                     intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos - 5) ;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
 
-        case 8:
-            // Column 8: Kings can only hop in specific directions
-            if (player == 1)
-            {
-                if (moveDistance == 7)
+        case 8: //Column 8
+             if (moveDistance == 7 || moveDistance == -9)
                 {
-                    intermediatePos = startPos + 4;
-                }
-                else if (moveDistance == -9)
-                {
-                    intermediatePos = startPos - 4;
+                    intermediatePos = (moveDistance == 7) ? (startPos + 4) : (startPos - 4) ;
                 }
                 else
                 {
                     return false;
                 }
-            }
-            else // player 2
-            {
-                if (moveDistance == -7)
-                {
-                    intermediatePos = startPos - 4;
-                }
-                else if (moveDistance == 9)
-                {
-                    intermediatePos = startPos + 4;
-                }
-                else
-                {
-                    return false;
-                }
-            }
+            
+ 
             break;
 
         default:
-            // Columns 3-6: General hop distances for kings
-            if (player == 1)
-            {
-                if (moveDistance == -7 || moveDistance == 9)
-                {
-                    intermediatePos = (moveDistance == -7) ? (startPos - 3) : (startPos + 5);
-                }
-                else if (moveDistance == 7 || moveDistance == -9)
-                {
-                    intermediatePos = (moveDistance == 7) ? (startPos + 4) : (startPos - 5);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else // player 2
-            {
-                if (moveDistance == 7 || moveDistance == -9)
-                {
-                    intermediatePos = (moveDistance == 7) ? (startPos + 3) : (startPos - 5);
-                }
-                else if (moveDistance == -7 || moveDistance == 9)
-                {
-                    intermediatePos = (moveDistance == -7) ? (startPos - 4) : (startPos + 5);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            break;
-        }
+            return false;
     }
 
-    if (intermediatePos < 0 || intermediatePos > 63)
+    if (intermediatePos < 0 || intermediatePos > 31) // this should not occur as the validate hop method already checks to ensure position is valid
     {
         return false;
     }
@@ -740,16 +746,16 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
 
     if (player == 1)
     {
-        // Check if enemy (player 2) occupies the intermediate position
-        enemyOccupied = getBitValue(p2PeonBoard, intermediatePos) || getBitValue(p2KingBoard, intermediatePos);
-        // Check if friendly (player 1) occupies the intermediate position
+        // check if enemy (player 2) occupies the intermediate position
+        enemyOccupied = (getBitValue(p2PeonBoard, intermediatePos) + getBitValue(p2KingBoard, intermediatePos)) == 1;
+        // check if friendly (player 1) occupies the intermediate position
         friendlyOccupied = getBitValue(p1PeonBoard, intermediatePos) || getBitValue(p1KingBoard, intermediatePos);
     }
-    else // player 2
+    else 
     {
-        // Check if enemy (player 1) occupies the intermediate position
-        enemyOccupied = getBitValue(p1PeonBoard, intermediatePos) || getBitValue(p1KingBoard, intermediatePos);
-        // Check if friendly (player 2) occupies the intermediate position
+        // check if enemy (player 1) occupies the intermediate position
+        enemyOccupied = (getBitValue(p1PeonBoard, intermediatePos) + getBitValue(p1KingBoard, intermediatePos)) == 1;
+        // check if friendly (player 2) occupies the intermediate position
         friendlyOccupied = getBitValue(p2PeonBoard, intermediatePos) || getBitValue(p2KingBoard, intermediatePos);
     }
 
