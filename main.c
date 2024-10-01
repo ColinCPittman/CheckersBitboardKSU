@@ -2,7 +2,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define POSITION(ROW, COL) (63 - (((ROW) - 1) * 8 + ((COL) - 1))) // Human-readable position
+#define POSITION(ROW, COL) (63 - (((ROW) - 1) * 8 + ((COL) - 1))) // Allows users to input row and column index to make moves.
+#define MENU_MAKE_MOVE 1                                          // input outcome, for more readable main method
+#define MENU_DISPLAY_BOARD 2                                      // input outcome, for more readable mian method
+#define MENU_EXIT 3                                               // input outcome, for more readable main method
 
 // bitboards
 uint32_t p1PeonBoard;
@@ -27,34 +30,195 @@ void convertSinglePositionTo32TileFormat(uint32_t *pos);
 void convertPositionsTo32TileFormat(uint32_t *startPos, uint32_t *endPos);
 bool updateRow(int *row, uint32_t pos);
 bool updateCol(int *col, uint32_t pos);
+int promptUserForInteger(const char *prompt);
+int checkVictory();
+bool canHopAgain(int currentPlayer, bool isKing, uint32_t endPos, int endCol);
+bool promptToPlayAgain();
+
+const char *mainMenu = "\n----- MAIN MENU -----\n"
+                       "1. Make a Move\n"
+                       "2. Display Board\n"
+                       "3. Exit\n";
+
+
 int main()
 {
+    bool keepPlaying = true;
 
-    p1PeonBoard = 0b11111111111100000000000000000000;
-    p1KingBoard = 0;
-    p2PeonBoard = 0b00000000000001000000111111111111;
-    p2KingBoard = 0;
-    displayBoard();
-    uint32_t a = 5;
-    uint32_t b = 3;
-    printf("Result of");
-    uint32_t result = binaryAdd(a, b);
-
-    printf("Result of binaryAdd(%u, %u) = %u\n", a, b, result);
-    printf("\nResult of div: %u\n", binaryDivide(11, 5));
-
-    if (validateMove(POSITION(3, 2), POSITION(5, 4)))
+    while (keepPlaying)
     {
-        printf("Move is valid.\n");
-    }
-    else
-    {
-        printf("Move is invalid.\n");
+        resetGame();
+        int currentPlayer = 1; 
+        bool gameOver = false;
+        int choice;
+        p1PeonBoard = 4285546496;
+        p2PeonBoard = 34815;
+        while (!gameOver)
+        {
+            printf("%s", mainMenu);
+            choice = promptUserForInteger("Enter your choice: ");
+
+            switch (choice)
+            {
+            case MENU_MAKE_MOVE:
+            {
+                bool continueHopping = false;
+                uint32_t startPos, endPos;
+                int startRow, startCol, endRow, endCol;
+
+                do
+                {
+                    if (!continueHopping) // if the player is doing a subsequent hop, they do not need to specify the starting index
+                    {
+                        displayBoard();
+                        printf("\nPlayer %d's Turn:\n", currentPlayer);
+
+                        startRow = promptUserForInteger("Enter Start Row (1-8): ");
+                        startCol = promptUserForInteger("Enter Start Column (1-8): ");
+
+                        if (startRow < 1 || startRow > 8 || startCol < 1 || startCol > 8)
+                        {
+                            printf("Invalid row or column. Please enter values between 1 and 8.\n");
+                            break;
+                        }
+
+                        startPos = POSITION(startRow, startCol);
+                    }
+
+                    endRow = promptUserForInteger("Enter End Row (1-8): ");
+                    endCol = promptUserForInteger("Enter End Column (1-8): ");
+
+                    if (endRow < 1 || endRow > 8 || endCol < 1 || endCol > 8)
+                    {
+                        printf("Invalid row or column. Please enter values between 1 and 8.\n");
+                        continue; // restart the loop to try again for input
+                    }
+
+                    endPos = POSITION(endRow, endCol);
+
+                    if (makeMove(startPos, endPos))
+                    {
+                        int victory = checkVictory();
+                        if (victory == 1)
+                        {
+                            displayBoard();
+                            printf("Player 1 is last one standing.\n");
+                            gameOver = true;
+                            break;
+                        }
+                        else if (victory == 2)
+                        {
+                            displayBoard();
+                            printf("Player 2 is last one standing.\n");
+                            gameOver = true;
+                            break;
+                        }
+
+
+                        int player;
+                        bool isKing;
+
+                        updateRow(&endRow, endPos);
+                        convertPositionsTo32TileFormat(&startPos,&endPos);
+                        int moveDistance = startPos - endPos;
+                        // determine piece at end position to get player and isKing
+                        determinePieceAndPlayer(endPos, &player, &isKing);
+                        if (player == 0) // assuming 0 is used to indicate no player found
+                        {
+                            printf("Error: No player found at the end position.\n");
+                            continue; // skip to next iteration
+                        }
+
+                        // Check if the move was a hop
+                        bool wasHop = isHop(currentPlayer, isKing, moveDistance);
+
+                        if (wasHop && canHopAgain(currentPlayer, isKing, endPos, endCol)) // if any of the possible hops from endPos could result in another successful hop
+                        {
+                            printf("Player %d performed a hop. You may perform another hop with the same piece.\n", currentPlayer);
+                            displayBoard();
+                            startPos = endPos; // their next hop's start position is known
+                            continueHopping = true;
+                        }
+                        else
+                        {
+                            // regular move, switch to the other player
+                            currentPlayer = (currentPlayer == 1) ? 2 : 1;
+                            continueHopping = false;
+                        }
+
+                    }
+                    else
+                    {
+                        printf("Invalid move. Please try again.\n");
+                        if (continueHopping)
+                        {
+                            printf("Continuing the hop sequence requires a valid hop. Try again or end your turn.\n");
+                        }
+                    }
+
+                } while (continueHopping && !gameOver);
+
+                break;
+            }
+
+            case MENU_DISPLAY_BOARD:
+                displayBoard();
+                break;
+
+            case MENU_EXIT:
+                printf("Exiting the game.\n");
+                gameOver = true;
+                keepPlaying = false; // Exit the outer loop as well
+                break;
+
+            default:
+                printf("Invalid choice. Please select a valid option from the menu.\n");
+            }
+        }
+
+        if (gameOver)
+        {
+            keepPlaying = promptToPlayAgain();
+            if (keepPlaying)
+            {
+                printf("\nStarting a new game...\n");
+            }
+            else
+            {
+                printf("Exiting. \n");
+            }
+        }
     }
 
     return 0;
 }
 
+ ///@brief Prompts the user to decide whether to play again or quit after a game ends
+ /// @return true if the user wants to play again; false otherwise
+bool promptToPlayAgain()
+{
+    int choice;
+    printf("\nWould you like to play again?\n");
+    printf("1. Yes\n");
+    printf("2. No\n");
+    choice = promptUserForInteger("Enter your choice: ");
+    
+    while (choice != 1 && choice != 2)
+    {
+        printf("Invalid choice. Please enter 1 for Yes or 2 for No.\n");
+        choice = promptUserForInteger("Enter your choice: ");
+    }
+    
+    return (choice == 1);
+}
+
+bool canHopAgain(int currentPlayer, bool isKing, uint32_t endPos, int endCol) {
+    //run the validate hop in all 4 possible directions to see if any are available, also must check if that landing spot is free.
+    return (validateHop(currentPlayer, isKing, -9, endPos, endCol) && !isOccupied(endPos + 9)) ||
+           (validateHop(currentPlayer, isKing, -7, endPos, endCol) && !isOccupied(endPos + 7)) ||
+           (validateHop(currentPlayer, isKing, 7, endPos, endCol && !isOccupied(endPos - 7))) ||
+           (validateHop(currentPlayer, isKing, 9, endPos, endCol) && !isOccupied(endPos - 9));
+}
 /// @brief Displays the current state of the board in an 8x8 ASCII grid.
 void displayBoard()
 {
@@ -226,8 +390,7 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
         }
     }
 
-    if ((endRow == 8 && player == 1 && !isKing) || (endRow == 1 && player == 2 && !isKing))
-        promoteToKing(endPos);
+    if ((endRow == 8 && player == 1 && !isKing) || (endRow == 1 && player == 2 && !isKing)) promoteToKing(endPos);
 
     return true;
 }
@@ -327,14 +490,16 @@ bool validateMove(uint32_t startPos, uint32_t endPos)
     if (isOccupied(endPos))
         return false;
 
-    if (isHop(player, isKing, moveDistance)) //check if it is a hop
+    if (isHop(player, isKing, moveDistance)) // check if it is a hop
     {
-        return validateHop(moveDistance, player, isKing, startPos, startCol); //return true if the hop is valid
-    } else {
-        return validateNormalMove(moveDistance, player, isKing, startCol); //return true if the normal move is valid.
+        return validateHop(player, isKing, moveDistance, startPos, startCol); // return true if the hop is valid
+    }
+    else
+    {
+        return validateNormalMove(moveDistance, player, isKing, startCol); // return true if the normal move is valid.
     }
 
-    return false; //otherwise move is not valid.
+    return false; // otherwise move is not valid.
 }
 
 /// @brief Simple check to see if all pieces have been eliminated from a players board, to be called after every capture.
@@ -438,7 +603,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == 9)
                 {
-                    hoppedPos = startPos + 4;
+                    hoppedPos = startPos - 4;
                 }
                 else
                 {
@@ -449,7 +614,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == -7)
                 {
-                    hoppedPos = startPos - 4;
+                    hoppedPos = startPos + 4;
                 }
                 else
                 {
@@ -464,7 +629,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == 9)
                 {
-                    hoppedPos = startPos + 5;
+                    hoppedPos = startPos - 5;
                 }
                 else
                 {
@@ -475,7 +640,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == -7)
                 {
-                    hoppedPos = startPos - 3;
+                    hoppedPos = startPos + 3;
                 }
                 else
                 {
@@ -483,12 +648,13 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
                 }
             }
             break;
+        case 5: //logic is the same for odd numbered positions that are not on an edge
         case 3:
             if (player == 1) // Column 3, player 1 peon.
             {
                 if (moveDistance == 7 || moveDistance == 9)
                 {
-                    hoppedPos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4);
+                    hoppedPos = (moveDistance == 7) ? (startPos - 3) : (startPos - 4);
                 }
                 else
                 {
@@ -499,7 +665,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == -7 || moveDistance == -9)
                 {
-                    hoppedPos = (moveDistance == -7) ? (startPos - 4) : (startPos - 5);
+                    hoppedPos = (moveDistance == -7) ? (startPos + 4) : (startPos + 5);
                 }
                 else
                 {
@@ -507,13 +673,13 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
                 }
             }
             break;
-
+        case 6: // even cases have the same movement logic for peices not on an edge
         case 4:
             if (player == 1) // Column 4, player 1 peon.
             {
                 if (moveDistance == 7 || moveDistance == 9)
                 {
-                    hoppedPos = (moveDistance == 7) ? (startPos + 4) : (startPos + 5);
+                    hoppedPos = (moveDistance == 7) ? (startPos - 4) : (startPos - 5);
                 }
                 else
                 {
@@ -524,59 +690,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == -7 || moveDistance == -9)
                 {
-                    hoppedPos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            break;
-
-        case 5:
-
-            if (player == 1) // Column 5, player 1 peon.
-            {
-                if (moveDistance == 7 || moveDistance == 9)
-                {
-                    hoppedPos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else // Column 5, player 2 peon.
-            {
-                if (moveDistance == -7 || moveDistance == -9)
-                {
-                    hoppedPos = (moveDistance == -7) ? (startPos - 4) : (startPos - 5);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            break;
-
-        case 6:
-
-            if (player == 1) // Column 6, player 1 peon.
-            {
-                if (moveDistance == 7 || moveDistance == 9)
-                {
-                    hoppedPos = (moveDistance == 7) ? (startPos + 4) : (startPos + 5);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else // Column 6, player 2 peon.
-            {
-                if (moveDistance == -7 || moveDistance == -9)
-                {
-                    hoppedPos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4);
+                    hoppedPos = (moveDistance == -7) ? (startPos + 3) : (startPos + 4);
                 }
                 else
                 {
@@ -591,7 +705,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == 7)
                 {
-                    hoppedPos = (startPos + 3);
+                    hoppedPos = (startPos - 3);
                 }
                 else
                 {
@@ -600,9 +714,9 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             }
             else // Column 7, player 2 peon.
             {
-                if (moveDistance == -9)
+                if (moveDistance == - 9)
                 {
-                    hoppedPos = startPos - 5;
+                    hoppedPos = startPos + 5;
                 }
                 else
                 {
@@ -617,7 +731,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance == 7)
                 {
-                    hoppedPos = startPos + 4;
+                    hoppedPos = startPos - 4;
                 }
                 else
                 {
@@ -626,9 +740,9 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             }
             else // Column 8, player 2 peon.
             {
-                if (moveDistance == -9)
+                if (moveDistance == - 9)
                 {
-                    hoppedPos = startPos - 4;
+                    hoppedPos = startPos + 4;
                 }
                 else
                 {
@@ -649,7 +763,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
 
             if (moveDistance == 9 || moveDistance == -7)
             {
-                hoppedPos = (moveDistance > 0) ? (startPos + 4) : (startPos - 4);
+                hoppedPos = (moveDistance == 9) ? (startPos - 4) : (startPos + 4);
             }
             else
             {
@@ -661,7 +775,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
         case 2: // Column 2
             if (moveDistance == 9 || moveDistance == -7)
             {
-                hoppedPos = (moveDistance > 0) ? (startPos + 5) : (startPos - 3);
+                hoppedPos = (moveDistance == 9 ) ? (startPos - 5) : (startPos + 3);
             }
             else
             {
@@ -675,11 +789,11 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance > 0)
                 {
-                    hoppedPos = (moveDistance == 7) ? (startPos + 3) : (startPos + 4);
+                    hoppedPos = (moveDistance == 7) ? (startPos - 3) : (startPos - 4);
                 }
                 else
                 {
-                    hoppedPos = (moveDistance == -7) ? (startPos - 4) : (startPos - 5);
+                    hoppedPos = (moveDistance == -7) ? (startPos + 4) : (startPos + 5);
                 }
             }
             else
@@ -694,11 +808,11 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             {
                 if (moveDistance > 0)
                 {
-                    hoppedPos = (moveDistance == 7) ? (startPos + 4) : (startPos + 5);
+                    hoppedPos = (moveDistance == 7) ? (startPos - 4) : (startPos - 5);
                 }
                 else
                 {
-                    hoppedPos = (moveDistance == -7) ? (startPos - 3) : (startPos - 4);
+                    hoppedPos = (moveDistance == -7) ? (startPos + 3) : (startPos + 4);
                 }
             }
             else
@@ -710,7 +824,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
         case 7: // Column 7
             if (moveDistance == -9 || moveDistance == 7)
             {
-                hoppedPos = (moveDistance == 7) ? (startPos + 3) : (startPos - 5);
+                hoppedPos = (moveDistance == 7) ? (startPos - 3) : (startPos + 5);
             }
             else
             {
@@ -721,7 +835,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
         case 8: // Column 8
             if (moveDistance == 7 || moveDistance == -9)
             {
-                hoppedPos = (moveDistance == 7) ? (startPos + 4) : (startPos - 4);
+                hoppedPos = (moveDistance == 7) ? (startPos - 4) : (startPos + 4);
             }
             else
             {
@@ -767,187 +881,190 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
     }
 }
 
-    /// @brief Validates if the move distance is allowed for the player's piece based on the current column.
-    /// @param moveDistance the distance of the move.
-    /// @param player the player that owns the piece making the move (1 or 2).
-    /// @param isKing whether the piece being moved is a king.
-    /// @param column the current column of the piece being moved (1-8).
-    /// @return true if the move distance is valid; false otherwise.
-    bool validateNormalMove(int moveDistance, int player, bool isKing, int startCol)
+/// @brief Validates if the move distance is allowed for the player's piece based on the current column.
+/// @param moveDistance the distance of the move.
+/// @param player the player that owns the piece making the move (1 or 2).
+/// @param isKing whether the piece being moved is a king.
+/// @param column the current column of the piece being moved (1-8).
+/// @return true if the move distance is valid; false otherwise.
+bool validateNormalMove(int moveDistance, int player, bool isKing, int startCol)
+{
+    if (!isKing)
     {
-        if (!isKing)
+        switch (startCol)
         {
-            switch (startCol)
-            {
-            case 8: // edge columns have the same movement logic for pawns
-            case 1:
+        case 8: // edge columns have the same movement logic for pawns
+        case 1:
 
-                if (moveDistance == 4 || moveDistance == -4)
-                {
-                    return (player == 1) ? (moveDistance == 4) : (moveDistance == -4);
-                }
-                break;
-            case 4: // column 5 same logic as column 2.
-            case 2:
-                if (moveDistance == 4 || moveDistance == 5 || moveDistance == -3 || moveDistance == -4)
-                {
-                    return (player == 1) ? (moveDistance > 0) : (moveDistance < 0);
-                }
-                break;
-            case 7: // odd cases not against the edge have the same logic
-            case 5:
-            case 3:
-                if (moveDistance == 3 || moveDistance == 4 || moveDistance == -4 || moveDistance == -5)
-                {
-                    return (player == 1) ? (moveDistance > 0) : (moveDistance < 0);
-                }
-                break;
-            default:
-                return false;
+            if (moveDistance == 4 || moveDistance == -4)
+            {
+                return (player == 1) ? (moveDistance == 4) : (moveDistance == -4);
             }
+            break;
+        case 6: //even cases of pieces not against the edge have the same logic
+        case 4:
+        case 2:
+            if (moveDistance == 4 || moveDistance == 5 || moveDistance == -3 || moveDistance == -4)
+            {
+                return (player == 1) ? (moveDistance > 0) : (moveDistance < 0);
+            }
+            break;
+        case 7: // odd cases not against the edge have the same logic
+        case 5:
+        case 3:
+            if (moveDistance == 3 || moveDistance == 4 || moveDistance == -4 || moveDistance == -5)
+            {
+                return (player == 1) ? (moveDistance > 0) : (moveDistance < 0);
+            }
+            break;
+        default:
+            return false;
+        }
+    }
+    else
+    {
+        switch (startCol)
+        {
+        case 8: // edge columns have the same movement logic for pawns
+        case 1:
+
+            if (moveDistance == 4 || moveDistance == -4)
+            {
+                return true;
+            }
+            break;
+        case 6: //even cases of pieces not against the edge have the same logic
+        case 4:
+        case 2:
+            if (moveDistance == 4 || moveDistance == 5 || moveDistance == -3 || moveDistance == -4)
+            {
+                return true;
+            }
+            break;
+        case 7: // odd cases not against the edge have the same logic
+        case 5:
+        case 3:
+            if (moveDistance == 3 || moveDistance == 4 || moveDistance == -4 || moveDistance == -5)
+            {
+                return true;
+            }
+            break;
+
+        default:
+            return false;
+        }
+    }
+    // If none of the conditions are met, the move distance is invalid
+    return false;
+}
+
+/// @brief Utility function to check if an array contains a specific value.
+/// @param array the array to search.
+/// @param size the size of the array.
+/// @param value the value to find.
+/// @return true if the value is found; false otherwise.
+bool arrayContains(int array[], int size, int value)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (array[i] == value)
+            return true;
+    }
+    return false;
+}
+
+/// @brief Converts startPos and endPos from 0-63 to 0-31 for compatability with board validation.
+/// @param startPos Pointer to the start position index (0-63).
+/// @param endPos Pointer to the end position index (0-63).
+void convertPositionsTo32TileFormat(uint32_t *startPos, uint32_t *endPos)
+{
+    if (startPos != NULL)
+    {
+        *startPos = (*startPos / 8) * 4 + ((*startPos % 8) / 2);
+    }
+    if (endPos != NULL)
+    {
+        *endPos = (*endPos / 8) * 4 + ((*endPos % 8) / 2);
+    }
+}
+
+/// @brief Converts a position from 0-63 to 0-31 for compatability with board validation.
+/// @param startPos Pointer to the start position index (0-63).
+/// @param endPos Pointer to the end position index (0-63).
+void convertSinglePositionTo32TileFormat(uint32_t *pos)
+{
+    if (pos != NULL)
+    {
+        *pos = (*pos / 8) * 4 + ((*pos % 8) / 2);
+    }
+}
+
+/// @brief Takes a 0-63 position and updates row and column numbers accordinly.
+/// @param row row value to be updated
+/// @param col column value to be updated
+/// @param pos position to determine row and col values.
+/// @return ture if sucessful, or false if the position is invalid.
+bool updateRowAndCol(int *row, int *col, uint32_t pos)
+{
+    if (pos >= 64)
+    {
+        return false;
+    }
+
+    *row = (63 - pos) / 8 + 1;
+    *col = (63 - pos) % 8 + 1;
+
+    return true;
+}
+/// @brief Takes a 0-63 position and updates the row column number accordinly.
+/// @param row row value to be updated
+/// @param pos position to determine row and col values.
+/// @return ture if sucessful, or false if the position is invalid.
+bool updateRow(int *row, uint32_t pos)
+{
+    if (pos >= 64)
+    {
+        return false;
+    }
+
+    *row = (63 - pos) / 8 + 1;
+
+    return true;
+}
+/// @brief Takes a 0-63 position and updates the column number accordinly.
+/// @param col column value to be updated
+/// @param pos position to determine row and col values.
+/// @return ture if sucessful, or false if the position is invalid.
+bool updateCol(int *col, uint32_t pos)
+{
+    if (pos >= 64)
+    {
+        return false;
+    }
+
+    *col = (63 - pos) % 8 + 1;
+
+    return true;
+}
+
+/// @brief Displays the given prompt message and then gets a valid integer from the user.
+/// @param prompt the message to display to the user.
+/// @return the integer entered by the user.
+int promptUserForInteger(const char *prompt)
+{
+    int input;
+    char c;
+    while (1)
+    {
+        printf("%s", prompt);
+
+        if (scanf("%d", &input) == 1)
+        {
+            while ((c = getchar()) != '\n' && c != EOF);
+            return input;
         }
         else
         {
-            switch (startCol)
-            {
-            case 8: // edge columns have the same movement logic for pawns
-            case 1:
-
-                if (moveDistance == 4 || moveDistance == -4)
-                {
-                    return true;
-                }
-                break;
-            case 4: // column 5 same logic as column 2.
-            case 2:
-                if (moveDistance == 4 || moveDistance == 5 || moveDistance == -3 || moveDistance == -4)
-                {
-                    return true;
-                }
-                break;
-            case 7: // odd cases not against the edge have the same logic
-            case 5:
-            case 3:
-                if (moveDistance == 3 || moveDistance == 4 || moveDistance == -4 || moveDistance == -5)
-                {
-                    return true;
-                }
-                break;
-
-            default:
-                return false;
-            }
-        }
-        // If none of the conditions are met, the move distance is invalid
-        return false;
-    }
-
-    /// @brief Utility function to check if an array contains a specific value.
-    /// @param array the array to search.
-    /// @param size the size of the array.
-    /// @param value the value to find.
-    /// @return true if the value is found; false otherwise.
-    bool arrayContains(int array[], int size, int value)
-    {
-        for (int i = 0; i < size; i++)
-        {
-            if (array[i] == value)
-                return true;
-        }
-        return false;
-    }
-
-    /// @brief Converts startPos and endPos from 0-63 to 0-31 for compatability with board validation.
-    /// @param startPos Pointer to the start position index (0-63).
-    /// @param endPos Pointer to the end position index (0-63).
-    void convertPositionsTo32TileFormat(uint32_t * startPos, uint32_t * endPos)
-    {
-        if (startPos != NULL)
-        {
-            *startPos = (*startPos / 8) * 4 + ((*startPos % 8) / 2);
-        }
-        if (endPos != NULL)
-        {
-            *endPos = (*endPos / 8) * 4 + ((*endPos % 8) / 2);
-        }
-    }
-
-    /// @brief Converts a position from 0-63 to 0-31 for compatability with board validation.
-    /// @param startPos Pointer to the start position index (0-63).
-    /// @param endPos Pointer to the end position index (0-63).
-    void convertSinglePositionTo32TileFormat(uint32_t * pos)
-    {
-        if (pos != NULL)
-        {
-            *pos = (*pos / 8) * 4 + ((*pos % 8) / 2);
-        }
-    }
-
-    /// @brief Takes a 0-63 position and updates row and column numbers accordinly.
-    /// @param row row value to be updated
-    /// @param col column value to be updated
-    /// @param pos position to determine row and col values.
-    /// @return ture if sucessful, or false if the position is invalid.
-    bool updateRowAndCol(int *row, int *col, uint32_t pos)
-    {
-        if (pos >= 64)
-        {
-            return false;
-        }
-
-        *row = (63 - pos) / 8 + 1;
-        *col = (63 - pos) % 8 + 1;
-
-        return true;
-    }
-    /// @brief Takes a 0-63 position and updates the row column number accordinly.
-    /// @param row row value to be updated
-    /// @param pos position to determine row and col values.
-    /// @return ture if sucessful, or false if the position is invalid.
-    bool updateRow(int *row, uint32_t pos)
-    {
-        if (pos >= 64)
-        {
-            return false;
-        }
-
-        *row = (63 - pos) / 8 + 1;
-
-        return true;
-    }
-    /// @brief Takes a 0-63 position and updates the column number accordinly.
-    /// @param col column value to be updated
-    /// @param pos position to determine row and col values.
-    /// @return ture if sucessful, or false if the position is invalid.
-    bool updateCol(int *col, uint32_t pos)
-    {
-        if (pos >= 64)
-        {
-            return false;
-        }
-
-        *col = (63 - pos) % 8 + 1;
-
-        return true;
-    }
-
-    /// @brief Displays the given prompt message and then gets a valid integer from the user.
-    /// @param prompt the message to display to the user.
-    /// @returntThe integer entered by the user.
-    int promptUserForInteger(const char* prompt) {
-    int input;
-    char c;
-
-    while (1) {
-        printf("%s", prompt);
-
-        // Check if valid input was entered
-        if (scanf("%d", &input) == 1) {
-            // Clear any extra characters from the input buffer
-            while ((c = getchar()) != '\n' && c != EOF);
-            return input;
-        } else {
-            // Clear the input buffer
             while ((c = getchar()) != '\n' && c != EOF);
             printf("Invalid input, please enter a valid integer.\n");
         }
