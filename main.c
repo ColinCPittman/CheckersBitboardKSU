@@ -930,3 +930,26 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
 
         return true;
     }
+
+    /// @brief Displays the given prompt message and then gets a valid integer from the user.
+    /// @param prompt the message to display to the user.
+    /// @returntThe integer entered by the user.
+    int promptUserForInteger(const char* prompt) {
+    int input;
+    char c;
+
+    while (1) {
+        printf("%s", prompt);
+
+        // Check if valid input was entered
+        if (scanf("%d", &input) == 1) {
+            // Clear any extra characters from the input buffer
+            while ((c = getchar()) != '\n' && c != EOF);
+            return input;
+        } else {
+            // Clear the input buffer
+            while ((c = getchar()) != '\n' && c != EOF);
+            printf("Invalid input, please enter a valid integer.\n");
+        }
+    }
+}
