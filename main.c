@@ -51,8 +51,6 @@ int main()
         int currentPlayer = 1; 
         bool gameOver = false;
         int choice;
-        p1PeonBoard = 4285546496;
-        p2PeonBoard = 34815;
         while (!gameOver)
         {
             printf("%s", mainMenu);
