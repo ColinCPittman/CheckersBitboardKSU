@@ -104,7 +104,7 @@ int main()
                     else //the player has already performed a move, if it was a hop then inform the player ending indexes only needed.
                     {
                         if(performedHop) {
-                        printf("\nPlayer %c performed a hop. You must choose a new end location for the same piece.\n", getPlayerChar(currentPlayer));
+                        printf("\nPlayer %c just performed a hop. They must choose a new end location for the same piece for a new hop.\n", getPlayerChar(currentPlayer));
                         } 
                     }
 
@@ -149,7 +149,6 @@ int main()
 
                         if (isHop(currentPlayer, isKing, moveDistance))
                         {
-                            printf("Player %c performed a hop. You must choose a new end location for the same piece.\n", getPlayerChar(currentPlayer));
                             performedHop == true; // Continue allowing the same player to make another move
                         }
                         else
@@ -254,8 +253,8 @@ bool promptToPlayAgain()
 /// @brief Displays the current state of the board in an 8x8 ASCII grid.
 void displayBoard()
 {
-    printf("  ---------------------------------\n");
     printf("    1 2 3 4 5 6 7 8\n");
+    printf("  -------------------\n");
     int bitIndex = 0;
 
     for (int row = 1; row <= 8; row++)
@@ -307,7 +306,8 @@ void displayBoard()
                 printf(". ");
             }
         }
-        printf("|\n");
+        printf("|");
+        printf(" %d\n", row); // print row number
     }
     printf("  -------------------\n");
     printf("    1 2 3 4 5 6 7 8\n");
