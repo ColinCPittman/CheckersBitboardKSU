@@ -23,7 +23,7 @@ bool checkHop(uint32_t hoppedPos, int player);
 bool isHop(int player, bool isKing, int moveDistance);
 void resetGame();
 bool makeMove(uint32_t startPos, uint32_t endPos);
-bool promoteToKing(uint32_t pos);
+void promoteToKing(int player, uint32_t pos);
 void displayBoard();
 bool updateRowAndCol(int *row, int *col, uint32_t pos);
 void convertSinglePositionTo32TileFormat(uint32_t *pos);
@@ -40,7 +40,6 @@ const char *mainMenu = "\n----- MAIN MENU -----\n"
                        "2. Display Board\n"
                        "3. Exit\n";
 
-
 int main()
 {
     bool keepPlaying = true;
@@ -48,9 +47,10 @@ int main()
     while (keepPlaying)
     {
         resetGame();
-        int currentPlayer = 1; 
+        int currentPlayer = 1;
         bool gameOver = false;
         int choice;
+
         while (!gameOver)
         {
             printf("%s", mainMenu);
@@ -112,12 +112,11 @@ int main()
                             break;
                         }
 
-
                         int player;
                         bool isKing;
 
                         updateRow(&endRow, endPos);
-                        convertPositionsTo32TileFormat(&startPos,&endPos);
+                        convertPositionsTo32TileFormat(&startPos, &endPos);
                         int moveDistance = startPos - endPos;
                         // determine piece at end position to get player and isKing
                         determinePieceAndPlayer(endPos, &player, &isKing);
@@ -143,7 +142,6 @@ int main()
                             currentPlayer = (currentPlayer == 1) ? 2 : 1;
                             continueHopping = false;
                         }
-
                     }
                     else
                     {
@@ -191,8 +189,8 @@ int main()
     return 0;
 }
 
- ///@brief Prompts the user to decide whether to play again or quit after a game ends
- /// @return true if the user wants to play again; false otherwise
+///@brief Prompts the user to decide whether to play again or quit after a game ends
+/// @return true if the user wants to play again; false otherwise
 bool promptToPlayAgain()
 {
     int choice;
@@ -200,18 +198,19 @@ bool promptToPlayAgain()
     printf("1. Yes\n");
     printf("2. No\n");
     choice = promptUserForInteger("Enter your choice: ");
-    
+
     while (choice != 1 && choice != 2)
     {
         printf("Invalid choice. Please enter 1 for Yes or 2 for No.\n");
         choice = promptUserForInteger("Enter your choice: ");
     }
-    
+
     return (choice == 1);
 }
 
-bool canHopAgain(int currentPlayer, bool isKing, uint32_t endPos, int endCol) {
-    //run the validate hop in all 4 possible directions to see if any are available, also must check if that landing spot is free.
+bool canHopAgain(int currentPlayer, bool isKing, uint32_t endPos, int endCol)
+{
+    // run the validate hop in all 4 possible directions to see if any are available, also must check if that landing spot is free.
     return (validateHop(currentPlayer, isKing, -9, endPos, endCol) && !isOccupied(endPos + 9)) ||
            (validateHop(currentPlayer, isKing, -7, endPos, endCol) && !isOccupied(endPos + 7)) ||
            (validateHop(currentPlayer, isKing, 7, endPos, endCol && !isOccupied(endPos - 7))) ||
@@ -388,59 +387,26 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
         }
     }
 
-    if ((endRow == 8 && player == 1 && !isKing) || (endRow == 1 && player == 2 && !isKing)) promoteToKing(endPos);
+    if ((endRow == 8 && player == 1 && !isKing) || (endRow == 1 && player == 2 && !isKing)) promoteToKing(player, endPos);
 
     return true;
 }
 
-/// @brief Promotes a peon to a king if it is on the opposing end, meant to be called by the movePiece method.
+/// @brief Promotes a peon to a king given the player and position.
 ///        Determines piece and owner to promote from position.
-/// @param pos Position index (0-63) of the peon to be promoted.
-/// @return true if promotion was successful; false otherwise.
-bool promoteToKing(uint32_t pos)
+/// @param pos Position index (0-31) of the peon to be promoted.
+
+void promoteToKing(int player, uint32_t pos)
 {
-    // check board boundarie using the 64 tile index positions
-    if (pos > 63)
-        return false;
-
-    int row;
-    int col;
-    if (updateRowAndCol(&row, &col, pos) == 0)
-        return false;
-
-    if ((row + col) % 2 == 0)
-        return false; // if on white tile
-
-    // re-interpret positions for 32 tile index positions and consider black tiles only.
-    convertSinglePositionTo32TileFormat(&pos);
-
-    // determine player and piece type
-    int player = 0;
-    bool isKing;
-    if (!determinePieceAndPlayer(pos, &player, &isKing))
-        return false;
-
-    if (!isKing)
+    if (player == 1)
     {
-        switch (player)
-        {
-        case 1:
-            if (row == 8)
-            {
-                clearBit(&p1PeonBoard, pos);
-                setBit(&p1KingBoard, pos);
-            }
-            break;
-        case 2:
-            if (row == 1)
-            {
-                clearBit(&p2PeonBoard, pos);
-                setBit(&p2KingBoard, pos);
-            }
-            break;
-        default:
-            return false;
-        }
+        clearBit(&p1PeonBoard, pos);
+        setBit(&p1KingBoard, pos);
+    }
+    else
+    {
+        clearBit(&p2PeonBoard, pos);
+        setBit(&p2KingBoard, pos);
     }
 }
 /// @brief Resets the board state for both players.
@@ -646,7 +612,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
                 }
             }
             break;
-        case 5: //logic is the same for odd numbered positions that are not on an edge
+        case 5: // logic is the same for odd numbered positions that are not on an edge
         case 3:
             if (player == 1) // Column 3, player 1 peon.
             {
@@ -712,7 +678,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             }
             else // Column 7, player 2 peon.
             {
-                if (moveDistance == - 9)
+                if (moveDistance == -9)
                 {
                     hoppedPos = startPos + 5;
                 }
@@ -738,7 +704,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
             }
             else // Column 8, player 2 peon.
             {
-                if (moveDistance == - 9)
+                if (moveDistance == -9)
                 {
                     hoppedPos = startPos + 4;
                 }
@@ -773,7 +739,7 @@ int validateHop(int player, bool isKing, int moveDistance, uint32_t startPos, in
         case 2: // Column 2
             if (moveDistance == 9 || moveDistance == -7)
             {
-                hoppedPos = (moveDistance == 9 ) ? (startPos - 5) : (startPos + 3);
+                hoppedPos = (moveDistance == 9) ? (startPos - 5) : (startPos + 3);
             }
             else
             {
@@ -899,7 +865,7 @@ bool validateNormalMove(int moveDistance, int player, bool isKing, int startCol)
                 return (player == 1) ? (moveDistance == 4) : (moveDistance == -4);
             }
             break;
-        case 6: //even cases of pieces not against the edge have the same logic
+        case 6: // even cases of pieces not against the edge have the same logic
         case 4:
         case 2:
             if (moveDistance == 4 || moveDistance == 5 || moveDistance == -3 || moveDistance == -4)
@@ -931,7 +897,7 @@ bool validateNormalMove(int moveDistance, int player, bool isKing, int startCol)
                 return true;
             }
             break;
-        case 6: //even cases of pieces not against the edge have the same logic
+        case 6: // even cases of pieces not against the edge have the same logic
         case 4:
         case 2:
             if (moveDistance == 4 || moveDistance == 5 || moveDistance == -3 || moveDistance == -4)
@@ -1058,12 +1024,14 @@ int promptUserForInteger(const char *prompt)
 
         if (scanf("%d", &input) == 1)
         {
-            while ((c = getchar()) != '\n' && c != EOF);
+            while ((c = getchar()) != '\n' && c != EOF)
+                ;
             return input;
         }
         else
         {
-            while ((c = getchar()) != '\n' && c != EOF);
+            while ((c = getchar()) != '\n' && c != EOF)
+                ;
             printf("Invalid input, please enter a valid integer.\n");
         }
     }
