@@ -4,8 +4,9 @@
 
 #define POSITION(ROW, COL) (63 - (((ROW) - 1) * 8 + ((COL) - 1))) // Allows users to input row and column index to make moves.
 #define MENU_MAKE_MOVE 1                                          // input outcome, for more readable main method
-#define MENU_DISPLAY_BOARD 2                                      // input outcome, for more readable mian method
-#define MENU_EXIT 3                                               // input outcome, for more readable main method
+#define MENU_END_TURN 2
+#define MENU_DISPLAY_BOARD 3                                      // input outcome, for more readable mian method
+#define MENU_EXIT 4                                               // input outcome, for more readable main method
 
 // bitboards
 uint32_t p1PeonBoard;
@@ -13,6 +14,7 @@ uint32_t p1KingBoard;
 uint32_t p2PeonBoard;
 uint32_t p2KingBoard;
 
+char getPlayerChar(int player);
 bool validateMove(uint32_t startPos, uint32_t endPos);
 bool arrayContains(int array[], int size, int value);
 bool isOccupied(uint32_t pos);
@@ -32,13 +34,8 @@ bool updateRow(int *row, uint32_t pos);
 bool updateCol(int *col, uint32_t pos);
 int promptUserForInteger(const char *prompt);
 int checkVictory();
-bool canHopAgain(int currentPlayer, bool isKing, uint32_t endPos, int endCol);
 bool promptToPlayAgain();
 
-const char *mainMenu = "\n----- MAIN MENU -----\n"
-                       "1. Make a Move\n"
-                       "2. Display Board\n"
-                       "3. Exit\n";
 
 int main()
 {
@@ -50,9 +47,18 @@ int main()
         int currentPlayer = 1;
         bool gameOver = false;
         int choice;
-
+        bool hasMadeMove = false;
+        char mainMenu[256];
         while (!gameOver)
         {
+            
+            snprintf(mainMenu, sizeof(mainMenu), //update the menu to the current player
+                     "\n----- MAIN MENU -----\n"
+                     "1. Make a Move\n"
+                     "2. End Player %c's Turn\n"
+                     "3. Display Board\n"
+                     "4. Exit\n",
+                     getPlayerChar(currentPlayer));
             printf("%s", mainMenu);
             choice = promptUserForInteger("Enter your choice: ");
 
@@ -60,16 +66,22 @@ int main()
             {
             case MENU_MAKE_MOVE:
             {
-                bool continueHopping = false;
                 uint32_t startPos, endPos;
                 int startRow, startCol, endRow, endCol;
-
+                int player;
+                bool isKing;
+                int moveDistance = 0;
+                bool performedHop = false;
                 do
                 {
-                    if (!continueHopping) // if the player is doing a subsequent hop, they do not need to specify the starting index
+                    if(hasMadeMove && !performedHop) { //interrupt the player if they try to move again when they are not allowed to
+                    printf("\nNo valid move.");
+                    break;
+                    }
+                    displayBoard();
+                    if (!hasMadeMove)
                     {
-                        displayBoard();
-                        printf("\nPlayer %d's Turn:\n", currentPlayer);
+                        printf("\nPlayer %c's Turn:\n", getPlayerChar(currentPlayer));
 
                         startRow = promptUserForInteger("Enter Start Row (1-8): ");
                         startCol = promptUserForInteger("Enter Start Column (1-8): ");
@@ -81,6 +93,19 @@ int main()
                         }
 
                         startPos = POSITION(startRow, startCol);
+                        int startPosCheck = startPos;
+                        convertSinglePositionTo32TileFormat(&startPosCheck);
+                        determinePieceAndPlayer(startPosCheck, &player, &isKing);
+                        if (player != currentPlayer) {
+                            printf("Invalid move, cannot move opponent's pieces. Try again.\n");
+                            break;
+                        }
+                    }
+                    else //the player has already performed a move, if it was a hop then inform the player ending indexes only needed.
+                    {
+                        if(performedHop) {
+                        printf("\nPlayer %c performed a hop. You must choose a new end location for the same piece.\n", getPlayerChar(currentPlayer));
+                        } 
                     }
 
                     endRow = promptUserForInteger("Enter End Row (1-8): ");
@@ -89,76 +114,93 @@ int main()
                     if (endRow < 1 || endRow > 8 || endCol < 1 || endCol > 8)
                     {
                         printf("Invalid row or column. Please enter values between 1 and 8.\n");
-                        continue; // restart the loop to try again for input
+                        continue;
                     }
 
                     endPos = POSITION(endRow, endCol);
 
-                    if (makeMove(startPos, endPos))
+
+                    if (makeMove(startPos, endPos)) // if move is valid
                     {
+                        hasMadeMove = true;
+                        convertPositionsTo32TileFormat(&startPos, &endPos);
+                        int moveDistance = startPos - endPos;
+                        startPos = endPos; // set for potential next hop
+
                         int victory = checkVictory();
                         if (victory == 1)
                         {
                             displayBoard();
-                            printf("Player 1 is last one standing.\n");
+                            printf("Player A is the last one standing.\n");
                             gameOver = true;
                             break;
                         }
                         else if (victory == 2)
                         {
                             displayBoard();
-                            printf("Player 2 is last one standing.\n");
+                            printf("Player B is the last one standing.\n");
                             gameOver = true;
                             break;
                         }
 
-                        int player;
-                        bool isKing;
+                        
+                        int movedPlayer;
+                        determinePieceAndPlayer(endPos, &movedPlayer, &isKing);
 
-                        updateRow(&endRow, endPos);
-                        convertPositionsTo32TileFormat(&startPos, &endPos);
-                        int moveDistance = startPos - endPos;
-                        // determine piece at end position to get player and isKing
-                        determinePieceAndPlayer(endPos, &player, &isKing);
-                        if (player == 0) // assuming 0 is used to indicate no player found
+                        if (isHop(currentPlayer, isKing, moveDistance))
                         {
-                            printf("Error: No player found at the end position.\n");
-                            continue; // skip to next iteration
-                        }
-
-                        // Check if the move was a hop
-                        bool wasHop = isHop(currentPlayer, isKing, moveDistance);
-
-                        if (wasHop && canHopAgain(currentPlayer, isKing, endPos, endCol)) // if any of the possible hops from endPos could result in another successful hop
-                        {
-                            printf("Player %d performed a hop. You may perform another hop with the same piece.\n", currentPlayer);
-                            displayBoard();
-                            startPos = endPos; // their next hop's start position is known
-                            continueHopping = true;
+                            printf("Player %c performed a hop. You must choose a new end location for the same piece.\n", getPlayerChar(currentPlayer));
+                            performedHop == true; // Continue allowing the same player to make another move
                         }
                         else
                         {
-                            // regular move, switch to the other player
-                            currentPlayer = (currentPlayer == 1) ? 2 : 1;
-                            continueHopping = false;
+                            printf("Move completed.\n");
                         }
                     }
                     else
                     {
-                        printf("Invalid move. Please try again.\n");
-                        if (continueHopping)
-                        {
-                            printf("Continuing the hop sequence requires a valid hop. Try again or end your turn.\n");
-                        }
+                        printf("Not a valid move.\n");
                     }
 
-                } while (continueHopping && !gameOver);
+                } while (isHop(currentPlayer, isKing, moveDistance) && !gameOver);
 
                 break;
             }
-
+            case MENU_END_TURN:
+            {
+                if (hasMadeMove)
+                {
+                    printf("Ending Player %c's turn.\n", getPlayerChar(currentPlayer));
+                    currentPlayer = (currentPlayer == 1) ? 2 : 1;
+                    printf("It is now Player %c's turn.\n", getPlayerChar(currentPlayer));
+                    hasMadeMove = false; // Reset for the next player's turn
+                }
+                else
+                {
+                    printf("You must make at least one move before ending your turn.\n");
+                }
+                break;
+            }
             case MENU_DISPLAY_BOARD:
                 displayBoard();
+                char binaryBuffer[33], hexBuffer[9];
+
+                toBinaryString(p1PeonBoard, binaryBuffer, sizeof(binaryBuffer));
+                binaryToHexString(p1PeonBoard, hexBuffer, sizeof(hexBuffer));
+                printf("Player A Peon Board (Binary): %s\nPlayer A Peon Board (Hex): %s\n", binaryBuffer, hexBuffer);
+
+                toBinaryString(p1KingBoard, binaryBuffer, sizeof(binaryBuffer));
+                binaryToHexString(p1KingBoard, hexBuffer, sizeof(hexBuffer));
+                printf("Player A King Board (Binary): %s\nPlayer A King Board (Hex): %s\n", binaryBuffer, hexBuffer);
+
+                toBinaryString(p2PeonBoard, binaryBuffer, sizeof(binaryBuffer));
+                binaryToHexString(p2PeonBoard, hexBuffer, sizeof(hexBuffer));
+                printf("Player B Peon Board (Binary): %s\nPlayer B Peon Board (Hex): %s\n", binaryBuffer, hexBuffer);
+
+                toBinaryString(p2KingBoard, binaryBuffer, sizeof(binaryBuffer));
+                binaryToHexString(p2KingBoard, hexBuffer, sizeof(hexBuffer));
+                printf("Player B King Board (Binary): %s\nPlayer B King Board (Hex): %s\n", binaryBuffer, hexBuffer);
+
                 break;
 
             case MENU_EXIT:
@@ -181,13 +223,14 @@ int main()
             }
             else
             {
-                printf("Exiting. \n");
+                printf("Exiting.\n");
             }
         }
     }
 
     return 0;
 }
+
 
 ///@brief Prompts the user to decide whether to play again or quit after a game ends
 /// @return true if the user wants to play again; false otherwise
@@ -208,14 +251,6 @@ bool promptToPlayAgain()
     return (choice == 1);
 }
 
-bool canHopAgain(int currentPlayer, bool isKing, uint32_t endPos, int endCol)
-{
-    // run the validate hop in all 4 possible directions to see if any are available, also must check if that landing spot is free.
-    return (validateHop(currentPlayer, isKing, -9, endPos, endCol) && !isOccupied(endPos + 9)) ||
-           (validateHop(currentPlayer, isKing, -7, endPos, endCol) && !isOccupied(endPos + 7)) ||
-           (validateHop(currentPlayer, isKing, 7, endPos, endCol && !isOccupied(endPos - 7))) ||
-           (validateHop(currentPlayer, isKing, 9, endPos, endCol) && !isOccupied(endPos - 9));
-}
 /// @brief Displays the current state of the board in an 8x8 ASCII grid.
 void displayBoard()
 {
@@ -395,7 +430,6 @@ bool makeMove(uint32_t startPos, uint32_t endPos)
 /// @brief Promotes a peon to a king given the player and position.
 ///        Determines piece and owner to promote from position.
 /// @param pos Position index (0-31) of the peon to be promoted.
-
 void promoteToKing(int player, uint32_t pos)
 {
     if (player == 1)
@@ -1034,5 +1068,19 @@ int promptUserForInteger(const char *prompt)
                 ;
             printf("Invalid input, please enter a valid integer.\n");
         }
+    }
+}
+
+/// @brief Simple method that interprets 1 as A and 2 and B to make the menu prompt consistent with the letters being used to represent their pieces on the board.
+/// @param player number of the current player
+/// @return A or B depending on the value of player (1 or 2), otherwise returns '?'.
+char getPlayerChar(int player) {
+    switch (player) {
+        case 1:
+            return 'A';
+        case 2:
+            return 'B';
+        default:
+            return '?'; 
     }
 }
