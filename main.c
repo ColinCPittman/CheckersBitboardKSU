@@ -44,11 +44,13 @@ int main()
     while (keepPlaying)
     {
         resetGame();
+        p2PeonBoard = 0b00000000000000010000000100000000;
         int currentPlayer = 1;
         bool gameOver = false;
         int choice;
         bool hasMadeMove = false;
         char mainMenu[256];
+        bool performedHop = false;
         while (!gameOver)
         {
             
@@ -64,6 +66,7 @@ int main()
 
             switch (choice)
             {
+                
             case MENU_MAKE_MOVE:
             {
                 uint32_t startPos, endPos;
@@ -71,7 +74,7 @@ int main()
                 int player;
                 bool isKing;
                 int moveDistance = 0;
-                bool performedHop = false;
+                
                 do
                 {
                     if(hasMadeMove && !performedHop) { //interrupt the player if they try to move again when they are not allowed to
@@ -123,8 +126,10 @@ int main()
                     if (makeMove(startPos, endPos)) // if move is valid
                     {
                         hasMadeMove = true;
-                        convertPositionsTo32TileFormat(&startPos, &endPos);
-                        int moveDistance = startPos - endPos;
+                        int startPosCheck = startPos;
+                        int endPosCheck = endPos;
+                        convertPositionsTo32TileFormat(&startPosCheck, &endPosCheck);
+                        int moveDistance = startPosCheck - endPosCheck;
                         startPos = endPos; // set for potential next hop
 
                         int victory = checkVictory();
@@ -147,9 +152,9 @@ int main()
                         int movedPlayer;
                         determinePieceAndPlayer(endPos, &movedPlayer, &isKing);
 
-                        if (isHop(currentPlayer, isKing, moveDistance))
+                        if (isHop(movedPlayer, isKing, moveDistance))
                         {
-                            performedHop == true; // Continue allowing the same player to make another move
+                            performedHop = true; // Continue allowing the same player to make another move
                         }
                         else
                         {
@@ -173,6 +178,7 @@ int main()
                     currentPlayer = (currentPlayer == 1) ? 2 : 1;
                     printf("It is now Player %c's turn.\n", getPlayerChar(currentPlayer));
                     hasMadeMove = false; // Reset for the next player's turn
+                    performedHop = false; // Reset for the next player's turn
                 }
                 else
                 {
@@ -525,9 +531,9 @@ bool isHop(int player, bool isKing, int moveDistance)
 {
     if (player == 1 && isKing && (moveDistance == 9 || moveDistance == -7))
         return true;
-    else if (player == 1 && !(isKing) && (moveDistance == 9))
+    else if (player == 1 && !(isKing) && (moveDistance == 9 || moveDistance == 7))
         return true;
-    else if (player == 2 && isKing && (moveDistance == -7 || moveDistance == 9))
+    else if (isKing && (moveDistance == -7 || moveDistance == 9 || moveDistance == 7 || moveDistance == -9))
         return true;
     else if (player == 2 && !(isKing) && (moveDistance == -7 || moveDistance == -9))
         return true;
