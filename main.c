@@ -4,7 +4,7 @@
 
 #define POSITION(ROW, COL) (63 - (((ROW) - 1) * 8 + ((COL) - 1))) // Allows users to input row and column index to make moves.
 #define MENU_MAKE_MOVE 1                                          // input outcome, for more readable main method
-#define MENU_END_TURN 2
+#define MENU_END_TURN 2                                           // input outcome, for more readable mian method
 #define MENU_DISPLAY_BOARD 3                                      // input outcome, for more readable mian method
 #define MENU_EXIT 4                                               // input outcome, for more readable main method
 
