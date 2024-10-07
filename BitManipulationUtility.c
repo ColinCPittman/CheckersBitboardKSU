@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <string.h>  // Added for strlen
-#include <math.h>    // Added for pow
+#include <string.h> 
+#include <math.h>  
 
-// Forward declaration for binaryToHexChar
 char binaryToHexChar(uint8_t fourBitGroup);
 
 /// @brief Sets a bit to 1 by using a bitwise OR with 1 shifted left by bitPosition.
