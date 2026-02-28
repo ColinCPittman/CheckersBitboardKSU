@@ -1,4 +1,4 @@
-# Bitboard Checkers (C)
+# Bitboard Checkers
 
 A performance-oriented, 2-player checkers game written in C that utilizes bitboards for game state representation and custom low-level arithmetic.
 
